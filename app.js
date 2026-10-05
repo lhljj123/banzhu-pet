@@ -98,13 +98,13 @@ headRig.add(make(new THREE.SphereGeometry(.1, 18, 12), mat.dark, [0, -.18, .91],
 const whiskers = new THREE.Group();
 function whisker(side, y, tilt) {
   const curve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(side * .2, y, .94),
-    new THREE.Vector3(side * .62, y + tilt * .05, .98),
-    new THREE.Vector3(side * 1.02, y + tilt, .91)
+    new THREE.Vector3(side * .11, y + .02, .99),
+    new THREE.Vector3(side * .56, y + tilt * .05, 1.01),
+    new THREE.Vector3(side * 1.02, y + tilt, .94)
   ]);
   whiskers.add(make(new THREE.TubeGeometry(curve, 14, .009, 5, false), mat.white, [0, 0, 0]));
 }
-[-1, 1].forEach(side => { whisker(side, -.25, .13); whisker(side, -.34, 0); whisker(side, -.42, -.12); });
+[-1, 1].forEach(side => { whisker(side, -.20, .13); whisker(side, -.29, 0); whisker(side, -.38, -.12); });
 headRig.add(whiskers);
 
 const collar = make(new THREE.TorusGeometry(.52, .07, 12, 32), mat.pink, [0, 1.93, .02], [1, .72, 1]);

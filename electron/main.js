@@ -21,6 +21,10 @@ let preferencesPath;
 let preferences = {};
 let dragOffset = null;
 let petVisibleUntil = 0;
+let edgePeek = false;
+let savedPosition = null;
+let wanderTarget = null;
+let nextWanderAt = 0;
 let warningVisible = false;
 let state = {
   mode: 'focus',
@@ -55,13 +59,50 @@ function broadcast() {
 
 function showPetFor(seconds = 120) {
   petVisibleUntil = Date.now() + seconds * 1000;
-  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.showInactive();
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (edgePeek && savedPosition) mainWindow.setPosition(savedPosition.x, savedPosition.y);
+    edgePeek = false;
+    mainWindow.showInactive();
+  }
+}
+
+function moveToEdgePeek() {
+  if (!mainWindow || mainWindow.isDestroyed() || edgePeek) return;
+  const [currentX, currentY] = mainWindow.getPosition();
+  const display = screen.getDisplayNearestPoint({ x: currentX, y: currentY });
+  const area = display.workArea;
+  const [width, height] = mainWindow.getSize();
+  savedPosition = { x: currentX, y: currentY };
+  mainWindow.setPosition(area.x + area.width - 90, Math.max(area.y, area.y + area.height - height - 80));
+  edgePeek = true;
 }
 
 function updatePetVisibility() {
   if (!mainWindow || mainWindow.isDestroyed() || state.mode === 'break' || inactiveAt) return;
   if (warningVisible || Date.now() < petVisibleUntil) mainWindow.showInactive();
-  else mainWindow.hide();
+  else {
+    moveToEdgePeek();
+    mainWindow.showInactive();
+  }
+}
+
+function updateWander(now) {
+  if (!mainWindow || mainWindow.isDestroyed() || !warningVisible || state.mode !== 'focus') return;
+  const [currentX, currentY] = mainWindow.getPosition();
+  const display = screen.getDisplayNearestPoint({ x: currentX, y: currentY });
+  const area = display.workArea;
+  const [width, height] = mainWindow.getSize();
+  if (!wanderTarget || now >= nextWanderAt) {
+    wanderTarget = {
+      x: area.x + 30 + Math.floor(Math.random() * Math.max(1, area.width - width - 60)),
+      y: area.y + 30 + Math.floor(Math.random() * Math.max(1, area.height - height - 60))
+    };
+    nextWanderAt = now + 4500 + Math.random() * 3500;
+  }
+  const [x, y] = mainWindow.getPosition();
+  const nx = Math.round(x + (wanderTarget.x - x) * .035);
+  const ny = Math.round(y + (wanderTarget.y - y) * .035);
+  mainWindow.setPosition(nx, ny);
 }
 
 function createMainWindow() {
@@ -274,6 +315,7 @@ function tick() {
     return;
   }
   updatePetVisibility();
+  updateWander(now);
   if (state.paused || inactiveAt) return;
   state.elapsed += delta;
   state.totalSeconds += delta;

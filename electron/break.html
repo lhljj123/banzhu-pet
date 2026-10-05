@@ -1,16 +1,11 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>该休息了</title><link rel="stylesheet" href="break.css"></head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>猫猫接管中</title><link rel="stylesheet" href="break.css"></head>
 <body>
-  <main>
-    <div class="pet"><div class="head">•ᴗ•</div><div class="body"></div><i></i><b></b></div>
-    <p class="eyebrow">伴桌已接管屏幕</p>
-    <h1>屁股坐扁啦，起来走走</h1>
-    <p class="copy">看看远处，喝口水，活动一下肩颈。十分钟后再回来。</p>
-    <div id="timer">10:00</div>
-    <button id="continue" disabled>休息结束后继续</button>
-    <p class="note" id="note">倒计时结束前，屏幕会保持锁定</p>
-  </main>
-  <script src="break.js"></script>
+  <canvas id="breakCanvas" aria-label="正在恢复的 3D 猫猫"></canvas>
+  <header><span>猫猫接管中</span><strong id="timer">10:00</strong></header>
+  <p id="activity">起来走走，猫猫也在慢慢恢复</p>
+  <button id="continue" disabled>继续使用电脑</button>
+  <script src="break.bundle.js"></script>
 </body>
 </html>

@@ -1,6 +1,10 @@
 node_modules/
+vendor/
 release/
 dist/
+banzhu-pet/
+app.bundle.js
+electron/break.bundle.js
 *.log
 pet-*.png
 Gemini_Generated_Image_*.jpg

@@ -1,120 +1,220 @@
-const $ = selector => document.querySelector(selector);
-let state = { elapsed: 0, remaining: 3600, totalSeconds: 0, rounds: 0, points: 0, paused: false };
-let speechTimer;
-let actionTimer;
-let blinkTimer;
+import * as THREE from 'three';
 
-const timedActions = ['action-curious', 'action-wave', 'action-stretch'];
+const canvas = document.querySelector('#petCanvas');
+const reminder = document.querySelector('#reminder');
+const scene = new THREE.Scene();
+const camera = new THREE.OrthographicCamera(-2.35, 2.35, 2.8, -2.8, .1, 50);
+camera.position.set(0, 2.1, 8);
+camera.lookAt(0, 1.35, 0);
 
-function format(seconds) {
-  const value = Math.max(0, Math.ceil(seconds));
-  return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`;
+const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight, false);
+renderer.setClearColor(0, 0);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+scene.add(new THREE.HemisphereLight(0xfff9ef, 0x718078, 2.7));
+const light = new THREE.DirectionalLight(0xffedda, 4);
+light.position.set(-4, 7, 6);
+light.castShadow = true;
+light.shadow.mapSize.set(1024, 1024);
+scene.add(light);
+const fill = new THREE.DirectionalLight(0xb9dcff, 1.6);
+fill.position.set(4, 3, 4);
+scene.add(fill);
+
+const mat = {
+  cream: new THREE.MeshStandardMaterial({ color: 0xf1ece2, roughness: .88 }),
+  white: new THREE.MeshStandardMaterial({ color: 0xfffbf4, roughness: .9 }),
+  gray: new THREE.MeshStandardMaterial({ color: 0x827872, roughness: .86 }),
+  dark: new THREE.MeshStandardMaterial({ color: 0x322e2c, roughness: .5 }),
+  blue: new THREE.MeshPhysicalMaterial({ color: 0x67b7e8, roughness: .16, clearcoat: 1 }),
+  pink: new THREE.MeshStandardMaterial({ color: 0xdc96a2, roughness: .72 }),
+  gold: new THREE.MeshStandardMaterial({ color: 0xd7aa4f, metalness: .55, roughness: .32 })
+};
+
+function make(geometry, material, position, scale = [1, 1, 1]) {
+  const object = new THREE.Mesh(geometry, material);
+  object.position.set(...position);
+  object.scale.set(...scale);
+  object.castShadow = true;
+  object.receiveShadow = true;
+  return object;
 }
 
-function say(title, text, sticky = false) {
-  clearTimeout(speechTimer);
-  $('#speechTitle').textContent = title;
-  $('#speechText').textContent = text;
-  $('#speech').classList.add('show');
-  if (!sticky) speechTimer = setTimeout(() => $('#speech').classList.remove('show'), 4200);
-}
+const cat = new THREE.Group();
+cat.position.y = -1.35;
+scene.add(cat);
 
-function action(name, duration = 2400) {
-  const cat = $('#photoCat');
-  if (state.paused || state.elapsed >= 45 * 60) return;
-  clearTimeout(actionTimer);
-  cat.className = `photo-cat ${name}`;
-  actionTimer = setTimeout(() => { cat.className = 'photo-cat action-idle'; }, duration);
-}
+const body = make(new THREE.SphereGeometry(1, 40, 30), mat.cream, [0, 1.15, 0], [.82, 1.12, .68]);
+cat.add(body);
+const hips = make(new THREE.SphereGeometry(1, 36, 26), mat.cream, [0, .66, .18], [.84, .56, .68]);
+cat.add(hips);
+const belly = make(new THREE.SphereGeometry(.55, 32, 24), mat.white, [0, 1.05, .58], [.8, 1, .16]);
+cat.add(belly);
 
-function blink() {
-  const cat = $('#photoCat');
-  if (!state.paused) {
-    cat.classList.add('blink');
-    setTimeout(() => cat.classList.remove('blink'), 300);
-  }
-  clearTimeout(blinkTimer);
-  blinkTimer = setTimeout(blink, 3500 + Math.random() * 4500);
-}
+const headRig = new THREE.Group();
+headRig.position.set(0, 2.55, .04);
+cat.add(headRig);
+headRig.add(make(new THREE.SphereGeometry(1, 44, 34), mat.cream, [0, 0, 0], [.94, .83, .78]));
 
-function setStateAction(minutes) {
-  const cat = $('#photoCat');
-  clearTimeout(actionTimer);
-  if (state.paused) {
-    cat.className = 'photo-cat action-sleep';
-    $('#zzz').classList.add('show');
-  } else if (minutes >= 55) {
-    cat.className = 'photo-cat action-urgent';
-    $('#zzz').classList.remove('show');
-  } else if (minutes >= 45) {
-    cat.className = 'photo-cat action-tired';
-    $('#zzz').classList.remove('show');
-  } else if (!timedActions.some(name => cat.classList.contains(name))) {
-    cat.className = 'photo-cat action-idle';
-    $('#zzz').classList.remove('show');
-  }
+function addEar(x) {
+  const group = new THREE.Group();
+  group.position.set(x, .7, -.03);
+  const outer = make(new THREE.ConeGeometry(.4, .9, 4), mat.gray, [0, 0, 0], [1, 1, .55]);
+  outer.rotation.y = Math.PI / 4;
+  outer.rotation.z = x < 0 ? -.1 : .1;
+  const inner = make(new THREE.ConeGeometry(.22, .54, 4), mat.pink, [0, -.01, .2], [1, 1, .22]);
+  inner.rotation.y = Math.PI / 4;
+  inner.rotation.z = outer.rotation.z;
+  group.add(outer, inner);
+  headRig.add(group);
+  return group;
 }
+const leftEar = addEar(-.58);
+const rightEar = addEar(.58);
 
-function render(next) {
-  const previousMinutes = Math.floor(state.elapsed / 60);
+const eyes = [];
+function addEye(x) {
+  const rig = new THREE.Group();
+  rig.position.set(x, .05, .75);
+  rig.add(make(new THREE.SphereGeometry(.14, 24, 18), mat.blue, [0, 0, 0], [1, 1.05, .38]));
+  rig.add(make(new THREE.SphereGeometry(.065, 18, 12), mat.dark, [0, 0, .055], [.7, 1.2, .35]));
+  rig.add(make(new THREE.SphereGeometry(.024, 10, 8), mat.white, [-.04, .05, .08]));
+  headRig.add(rig);
+  eyes.push(rig);
+}
+addEye(-.32); addEye(.32);
+
+const muzzleLeft = make(new THREE.SphereGeometry(.28, 24, 18), mat.white, [-.2, -.25, .75], [1, .7, .38]);
+const muzzleRight = muzzleLeft.clone(); muzzleRight.position.x = .2;
+headRig.add(muzzleLeft, muzzleRight);
+headRig.add(make(new THREE.SphereGeometry(.1, 18, 12), mat.dark, [0, -.18, .91], [1, .7, .5]));
+
+const collar = make(new THREE.TorusGeometry(.52, .07, 12, 32), mat.pink, [0, 1.93, .02], [1, .72, 1]);
+collar.rotation.x = Math.PI / 2;
+cat.add(collar);
+cat.add(make(new THREE.SphereGeometry(.1, 18, 12), mat.gold, [0, 1.75, .65]));
+
+const hindPaws = [];
+function hindPaw(x) {
+  const paw = make(new THREE.SphereGeometry(.3, 26, 18), mat.white, [x, .24, .45], [1.25, .55, 1.25]);
+  cat.add(paw);
+  hindPaws.push(paw);
+}
+hindPaw(-.43); hindPaw(.43);
+
+function arm(x) {
+  const rig = new THREE.Group();
+  rig.position.set(x, 1.55, .47);
+  const limb = make(new THREE.CapsuleGeometry(.18, .58, 8, 16), mat.cream, [0, -.28, 0], [1, 1, .9]);
+  const paw = make(new THREE.SphereGeometry(.24, 22, 16), mat.white, [0, -.65, .08], [1.05, .68, 1.05]);
+  rig.add(limb, paw);
+  cat.add(rig);
+  return rig;
+}
+const leftArm = arm(-.62);
+const rightArm = arm(.62);
+leftArm.rotation.z = -.12;
+rightArm.rotation.z = .12;
+
+const tailRig = new THREE.Group();
+tailRig.position.set(.64, .75, -.22);
+const tailPath = new THREE.CatmullRomCurve3([
+  new THREE.Vector3(0,0,0), new THREE.Vector3(.55,.04,0), new THREE.Vector3(1,.34,.05),
+  new THREE.Vector3(.92,.8,.12), new THREE.Vector3(.62,.98,.2)
+]);
+tailRig.add(make(new THREE.TubeGeometry(tailPath, 28, .16, 10, false), mat.gray, [0,0,0]));
+cat.add(tailRig);
+
+const floor = make(new THREE.CircleGeometry(1.15, 40), new THREE.ShadowMaterial({ color: 0x2a211c, opacity: .2 }), [0, -.12, 0], [1.3, .38, 1]);
+floor.rotation.x = -Math.PI / 2;
+floor.receiveShadow = true;
+cat.add(floor);
+
+let state = { elapsed: 0, totalSeconds: 0, rounds: 0, paused: false };
+let pointerX = 0;
+let pointerY = 0;
+let blink = 0;
+let nextBlink = 2;
+let dragging = false;
+let moved = false;
+let dragStart = { x: 0, y: 0 };
+const clock = new THREE.Clock();
+
+function updateState(next) {
   state = next;
-  const minutes = Math.floor(state.elapsed / 60);
-  const todayMinutes = Math.floor(state.totalSeconds / 60);
-  $('#todayTime').textContent = `${todayMinutes} 分钟`;
-  $('#roundTime').textContent = format(state.elapsed);
-  $('#points').textContent = state.points;
-  $('#rounds').textContent = `${state.rounds} 次`;
-  $('#progress').style.width = `${Math.min(100, state.elapsed / state.focusSeconds * 100)}%`;
-  $('#pauseButton').textContent = state.paused ? '▶' : 'Ⅱ';
-  $('#pauseButton').title = state.paused ? '继续计时' : '暂停计时';
-  setStateAction(minutes);
-
-  if (state.paused && !document.querySelector('.speech.show')) say('我先睡一会儿', '准备好后再叫醒我', true);
-  if (!state.paused && previousMinutes < 30 && minutes >= 30) say('已经半小时啦', '活动一下肩膀，我们再继续');
-  if (!state.paused && previousMinutes < 45 && minutes >= 45) say('我有点坐不住了', '把手上的事情慢慢收个尾');
-  if (!state.paused && previousMinutes < 55 && minutes >= 55) say('只剩五分钟', '记得保存，马上要休息啦', true);
+  reminder.classList.toggle('show', state.elapsed >= 55 * 60 && state.elapsed < 60 * 60);
 }
 
-function toggleStats(open) {
-  const panel = $('#stats');
-  const shouldOpen = open ?? !panel.classList.contains('open');
-  panel.classList.toggle('open', shouldOpen);
-  panel.setAttribute('aria-hidden', String(!shouldOpen));
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), .05);
+  const t = clock.elapsedTime;
+  const minutes = state.elapsed / 60;
+  const flatten = THREE.MathUtils.clamp(state.elapsed / (state.focusSeconds || 60 * 60), 0, 1);
+  let targetY = -1.35 + Math.sin(t * 2) * .012;
+  cat.position.y += (targetY - cat.position.y) * .1;
+  hips.scale.x += (.84 * (1 + flatten * .62) - hips.scale.x) * .08;
+  hips.scale.y += (.56 * (1 - flatten * .48) - hips.scale.y) * .08;
+  hips.position.y += (.66 - flatten * .17 - hips.position.y) * .08;
+  body.scale.x += (.82 * (1 + flatten * .12) - body.scale.x) * .08;
+  body.scale.y += (1.12 * (1 - flatten * .12) - body.scale.y) * .08;
+  body.position.y += (1.15 - flatten * .1 - body.position.y) * .08;
+  belly.scale.x += (.8 * (1 + flatten * .18) - belly.scale.x) * .08;
+  belly.scale.y += (1 - flatten * .16 - belly.scale.y) * .08;
+  headRig.position.y += (2.55 - flatten * .1 - headRig.position.y) * .08;
+  hindPaws[0].position.x += (-.43 - flatten * .28 - hindPaws[0].position.x) * .08;
+  hindPaws[1].position.x += (.43 + flatten * .28 - hindPaws[1].position.x) * .08;
+  tailRig.rotation.y = Math.sin(t * 1.5) * .28;
+  leftArm.rotation.z = -.12;
+  if (minutes >= 55) leftArm.rotation.z = -.3 - Math.abs(Math.sin(t * 6)) * .55;
+  headRig.rotation.x += (pointerY * .1 - headRig.rotation.x) * .08;
+  headRig.rotation.y += (pointerX * .18 - headRig.rotation.y) * .08;
+  eyes.forEach(eye => {
+    eye.rotation.y += (pointerX * .1 - eye.rotation.y) * .1;
+    eye.rotation.x += (-pointerY * .06 - eye.rotation.x) * .1;
+  });
+  leftEar.rotation.z = Math.sin(t * .65) > .97 ? -.1 : 0;
+  rightEar.rotation.z = Math.sin(t * .57 + 2) > .97 ? .1 : 0;
+  if (t > nextBlink) {
+    blink = Math.min(1, blink + dt * 14);
+    if (blink >= 1) nextBlink = t + 3 + Math.random() * 4;
+  } else blink = Math.max(0, blink - dt * 12);
+  eyes.forEach(eye => eye.scale.y = Math.max(.08, 1 - blink));
+  if (blink >= 1) blink = .98;
+  renderer.render(scene, camera);
 }
 
-function greet() {
-  const choices = [
-    ['action-wave', '嗨，我在这里', '摸鱼也要记得眨眨眼'],
-    ['action-curious', '你在写什么呀', '让我也看看'],
-    ['action-bounce', '收到你的摸摸', '继续加油，我陪着你'],
-    ['action-stretch', '一起伸个懒腰', '肩膀放松一点']
-  ];
-  const [motion, title, text] = choices[Math.floor(Math.random() * choices.length)];
-  action(motion, motion === 'action-bounce' ? 2200 : 2700);
-  say(title, text);
-}
-
-$('#catZone').addEventListener('dblclick', () => toggleStats());
-$('#catZone').addEventListener('mouseenter', () => action('action-curious', 2000));
-$('#closeStats').addEventListener('click', event => { event.stopPropagation(); toggleStats(false); });
-$('#greetButton').addEventListener('click', greet);
-$('#pauseButton').addEventListener('click', async () => {
-  render(state.paused ? await window.desktopPet.resume() : await window.desktopPet.pause());
-  if (!state.paused) { $('#speech').classList.remove('show'); say('睡醒啦', '继续陪你工作'); }
+canvas.addEventListener('pointerdown', event => {
+  if (event.button !== 0) return;
+  dragging = true;
+  moved = false;
+  dragStart = { x: event.screenX, y: event.screenY };
+  canvas.setPointerCapture(event.pointerId);
+  window.desktopPet.beginDrag(dragStart);
 });
-$('#resetButton').addEventListener('click', async () => {
-  render(await window.desktopPet.reset());
-  action('action-bounce', 2200);
-  say('重新开始计时', '这一轮也要照顾好自己');
+canvas.addEventListener('pointermove', event => {
+  if (dragging) {
+    if (Math.hypot(event.screenX - dragStart.x, event.screenY - dragStart.y) > 4) moved = true;
+    if (moved) window.desktopPet.dragTo({ x: event.screenX, y: event.screenY });
+    return;
+  }
+  pointerX = (event.clientX / innerWidth - .5) * 2;
+  pointerY = (event.clientY / innerHeight - .5) * 2;
 });
-$('#hideButton').addEventListener('click', () => window.desktopPet.hide());
+canvas.addEventListener('pointerup', event => {
+  dragging = false;
+  if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+});
+canvas.addEventListener('pointerleave', () => { if (!dragging) { pointerX = 0; pointerY = 0; } });
+canvas.addEventListener('contextmenu', event => { event.preventDefault(); window.desktopPet.showContextMenu(); });
+window.addEventListener('resize', () => renderer.setSize(innerWidth, innerHeight, false));
 
-if (window.desktopPet) {
-  window.desktopPet.onState(render);
-  window.desktopPet.getState().then(render);
-  setTimeout(() => say('我来陪你啦', '点点我，会有不同动作'), 500);
-  setTimeout(blink, 1800);
-  setInterval(() => {
-    if (!state.paused && state.elapsed < 45 * 60) action(timedActions[Math.floor(Math.random() * timedActions.length)]);
-  }, 12000);
-}
+window.desktopPet.onState(updateState);
+window.desktopPet.getState().then(updateState);
+animate();

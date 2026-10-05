@@ -3,47 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>伴桌猫猫</title>
+  <title>伴桌</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <main class="pet-stage" id="petStage">
-    <section class="speech" id="speech" aria-live="polite">
-      <strong id="speechTitle">我来陪你啦</strong>
-      <span id="speechText">认真工作，也要记得休息</span>
+  <main class="pet-stage">
+    <canvas id="petCanvas" aria-label="3D 桌宠猫猫"></canvas>
+    <section class="reminder" id="reminder" aria-live="polite">
+      <strong>还有 5 分钟</strong>
+      <span>保存一下，准备休息啦</span>
     </section>
-
-    <section class="stats" id="stats" aria-hidden="true">
-      <header>
-        <div><small>今日陪伴</small><strong id="todayTime">0 分钟</strong></div>
-        <button id="closeStats" aria-label="收起数据">×</button>
-      </header>
-      <div class="stats-grid">
-        <div><span>本轮</span><b id="roundTime">00:00</b></div>
-        <div><span>积分</span><b id="points">0</b></div>
-        <div><span>完成休息</span><b id="rounds">0 次</b></div>
-      </div>
-      <div class="progress"><i id="progress"></i></div>
-      <p>连续使用 55 分钟提醒，60 分钟强制休息</p>
-    </section>
-
-    <div class="cat-zone" id="catZone" title="双击查看今日数据">
-      <div class="photo-cat action-idle" id="photoCat">
-        <img src="assets/cat-photo-cutout.png" alt="戴粉色蝴蝶结的奶油色小猫">
-        <div class="eyelid left"></div>
-        <div class="eyelid right"></div>
-      </div>
-      <div class="zzz" id="zzz"><i>z</i><i>z</i><i>z</i></div>
-      <div class="ground-shadow"></div>
-    </div>
-
-    <div class="quick-actions">
-      <button id="greetButton" title="和猫猫互动" aria-label="和猫猫互动">♡</button>
-      <button id="pauseButton" title="暂停计时" aria-label="暂停计时">Ⅱ</button>
-      <button id="resetButton" title="重新计时" aria-label="重新计时">↻</button>
-      <button id="hideButton" title="隐藏猫猫" aria-label="隐藏猫猫">×</button>
-    </div>
   </main>
-  <script src="app.js"></script>
+  <script>window.addEventListener('error', event => window.desktopPet?.reportError(`${event.message} @ ${event.filename}:${event.lineno}`));</script>
+  <script src="app.bundle.js"></script>
 </body>
 </html>

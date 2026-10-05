@@ -4,10 +4,11 @@ const { spawn } = require('child_process');
 const readline = require('readline');
 const fs = require('fs');
 
-const FOCUS_SECONDS = 60 * 60;
-const WARNING_SECONDS = 55 * 60;
-const BREAK_SECONDS = 10 * 60;
-const RESET_INACTIVE_SECONDS = 8 * 60;
+const FOCUS_SECONDS = Number(process.env.PET_FOCUS_SECONDS || 60 * 60);
+const WARNING_SECONDS = Number(process.env.PET_WARNING_SECONDS || 55 * 60);
+const BREAK_SECONDS = Number(process.env.PET_BREAK_SECONDS || 10 * 60);
+const RESET_INACTIVE_SECONDS = Number(process.env.PET_RESET_INACTIVE_SECONDS || 8 * 60);
+const PET_VISIBLE_SECONDS = Number(process.env.PET_VISIBLE_SECONDS || 120);
 
 let mainWindow;
 let tray;
@@ -18,6 +19,9 @@ let inactiveAt = null;
 let lastTick = Date.now();
 let preferencesPath;
 let preferences = {};
+let dragOffset = null;
+let petVisibleUntil = 0;
+let warningVisible = false;
 let state = {
   mode: 'focus',
   elapsed: 0,
@@ -49,13 +53,31 @@ function broadcast() {
   });
 }
 
+function showPetFor(seconds = 120) {
+  petVisibleUntil = Date.now() + seconds * 1000;
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.showInactive();
+}
+
+function updatePetVisibility() {
+  if (!mainWindow || mainWindow.isDestroyed() || state.mode === 'break' || inactiveAt) return;
+  if (warningVisible || Date.now() < petVisibleUntil) mainWindow.showInactive();
+  else mainWindow.hide();
+}
+
 function createMainWindow() {
   const display = screen.getPrimaryDisplay();
   const defaultX = display.workArea.x + display.workArea.width - 320;
   const defaultY = display.workArea.y + display.workArea.height - 390;
-  mainWindow = new BrowserWindow({
+  const requestedPoint = {
     x: Number.isFinite(preferences.x) ? preferences.x : defaultX,
-    y: Number.isFinite(preferences.y) ? preferences.y : defaultY,
+    y: Number.isFinite(preferences.y) ? preferences.y : defaultY
+  };
+  const initialArea = screen.getDisplayNearestPoint(requestedPoint).workArea;
+  const initialX = Math.max(initialArea.x, Math.min(requestedPoint.x, initialArea.x + initialArea.width - 300));
+  const initialY = Math.max(initialArea.y, Math.min(requestedPoint.y, initialArea.y + initialArea.height - 360));
+  mainWindow = new BrowserWindow({
+    x: initialX,
+    y: initialY,
     width: 300,
     height: 360,
     minWidth: 300,
@@ -79,11 +101,16 @@ function createMainWindow() {
   mainWindow.setAlwaysOnTop(true, 'floating');
   mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: false });
   mainWindow.loadFile(path.join(__dirname, '..', 'index.html'));
-  mainWindow.once('ready-to-show', () => mainWindow.showInactive());
+  mainWindow.webContents.on('console-message', (_event, details) => {
+    if (details.level === 'error') console.error(`[renderer] ${details.message}`);
+  });
+  mainWindow.once('ready-to-show', () => showPetFor(PET_VISIBLE_SECONDS));
   mainWindow.webContents.once('did-finish-load', async () => {
     if (!process.env.PET_CAPTURE_PATH) return;
-    const image = await mainWindow.webContents.capturePage();
-    fs.writeFileSync(process.env.PET_CAPTURE_PATH, image.toPNG());
+    setTimeout(async () => {
+      const image = await mainWindow.webContents.capturePage();
+      fs.writeFileSync(process.env.PET_CAPTURE_PATH, image.toPNG());
+    }, 1500);
   });
   let savePositionTimer;
   mainWindow.on('move', () => {
@@ -108,19 +135,17 @@ function createTray() {
   tray = new Tray(nativeImage.createFromDataURL(`data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`).resize({ width: 16, height: 16 }));
   tray.setToolTip('伴桌 - 久坐休息提醒');
   tray.setContextMenu(Menu.buildFromTemplate([
-    { label: '显示小花猫', click: () => mainWindow.showInactive() },
-    { label: '隐藏小花猫', click: () => mainWindow.hide() },
-    { label: '始终置顶', type: 'checkbox', checked: true, click: item => mainWindow.setAlwaysOnTop(item.checked, 'floating') },
-    { type: 'separator' },
-    { label: '重新计时', click: resetFocus },
+    { label: '伴桌正在自动计时', enabled: false },
+    { label: '亮屏时出现 2 分钟', enabled: false },
     { type: 'separator' },
     { label: '退出', click: () => { app.isQuitting = true; app.quit(); } }
   ]));
-  tray.on('double-click', () => mainWindow.isVisible() ? mainWindow.hide() : mainWindow.showInactive());
 }
 
 function showWarning() {
   state.warned = true;
+  warningVisible = true;
+  mainWindow?.showInactive();
   if (Notification.isSupported()) {
     const notice = new Notification({
       title: '还有 5 分钟就该休息了',
@@ -136,6 +161,8 @@ function startBreak() {
   state.breakRemaining = BREAK_SECONDS;
   state.rounds += 1;
   state.points += 20;
+  warningVisible = false;
+  mainWindow?.hide();
   closeOverlays();
   for (const display of screen.getAllDisplays()) {
     const { x, y, width, height } = display.bounds;
@@ -173,7 +200,9 @@ function finishBreak() {
   state.mode = 'focus';
   state.elapsed = 0;
   state.warned = false;
+  warningVisible = false;
   lastTick = Date.now();
+  showPetFor(PET_VISIBLE_SECONDS);
   broadcast();
   return true;
 }
@@ -193,6 +222,7 @@ function resetFocus(reason = '') {
   if (state.mode === 'break') return;
   state.elapsed = 0;
   state.warned = false;
+  warningVisible = false;
   state.resetReason = reason;
   lastTick = Date.now();
   broadcast();
@@ -202,6 +232,7 @@ function resetFocus(reason = '') {
 function becomeInactive() {
   if (inactiveAt || state.mode === 'break') return;
   inactiveAt = Date.now();
+  mainWindow?.hide();
 }
 
 function becomeActive() {
@@ -220,6 +251,8 @@ function becomeActive() {
     lastTick = Date.now();
     evaluateFocus();
   }
+  if (state.elapsed >= WARNING_SECONDS) warningVisible = true;
+  showPetFor(PET_VISIBLE_SECONDS);
 }
 
 function evaluateFocus() {
@@ -237,6 +270,7 @@ function tick() {
     broadcast();
     return;
   }
+  updatePetVisibility();
   if (state.paused || inactiveAt) return;
   state.elapsed += delta;
   state.totalSeconds += delta;
@@ -245,11 +279,44 @@ function tick() {
 }
 
 function registerIpc() {
+  ipcMain.on('debug:renderer-error', (_event, message) => {
+    fs.writeFileSync(path.join(app.getPath('userData'), 'renderer-error.log'), String(message));
+  });
   ipcMain.handle('timer:get-state', () => publicState());
-  ipcMain.handle('timer:pause', () => { state.paused = true; broadcast(); return publicState(); });
-  ipcMain.handle('timer:resume', () => { state.paused = false; lastTick = Date.now(); broadcast(); return publicState(); });
-  ipcMain.handle('timer:reset', () => { resetFocus('你手动重新开始了本轮。'); return publicState(); });
-  ipcMain.handle('window:hide', () => { mainWindow.hide(); return true; });
+  ipcMain.handle('timer:pause', () => publicState());
+  ipcMain.handle('timer:resume', () => publicState());
+  ipcMain.handle('timer:reset', () => publicState());
+  ipcMain.handle('window:hide', () => true);
+  ipcMain.handle('window:drag-start', (_event, point) => {
+    const [windowX, windowY] = mainWindow.getPosition();
+    dragOffset = { x: point.x - windowX, y: point.y - windowY };
+    return true;
+  });
+  ipcMain.on('window:drag-move', (_event, point) => {
+    if (!dragOffset || !mainWindow || mainWindow.isDestroyed()) return;
+    const area = screen.getDisplayNearestPoint(point).workArea;
+    const [width, height] = mainWindow.getSize();
+    const nextX = Math.max(area.x, Math.min(Math.round(point.x - dragOffset.x), area.x + area.width - width));
+    const nextY = Math.max(area.y, Math.min(Math.round(point.y - dragOffset.y), area.y + area.height - height));
+    mainWindow.setPosition(nextX, nextY);
+  });
+  ipcMain.handle('window:context-menu', event => {
+    const minutes = Math.floor(state.totalSeconds / 60);
+    const roundMinutes = Math.floor(state.elapsed / 60);
+    const menu = Menu.buildFromTemplate([
+      { label: `今日陪伴  ${minutes} 分钟`, enabled: false },
+      { label: `本轮使用  ${roundMinutes} 分钟`, enabled: false },
+      { label: `完成休息  ${state.rounds} 次`, enabled: false },
+      { type: 'separator' },
+      { label: '计时由屏幕状态自动控制', enabled: false },
+      { label: '始终置顶', type: 'checkbox', checked: mainWindow.isAlwaysOnTop(), click: item => mainWindow.setAlwaysOnTop(item.checked, 'floating') },
+      { label: '随 Windows 启动', type: 'checkbox', checked: app.getLoginItemSettings().openAtLogin, click: item => app.setLoginItemSettings({ openAtLogin: item.checked, path: app.getPath('exe') }) },
+      { type: 'separator' },
+      { label: '退出伴桌', click: () => { app.isQuitting = true; app.quit(); } }
+    ]);
+    menu.popup({ window: BrowserWindow.fromWebContents(event.sender) });
+    return true;
+  });
   ipcMain.handle('settings:save', () => publicState());
   ipcMain.handle('break:finish', () => finishBreak());
   ipcMain.handle('break:get-state', () => publicState());

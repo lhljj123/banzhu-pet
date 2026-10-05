@@ -1,19 +1,23 @@
 {
   "name": "banzhu-pet",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "一只会监督久坐、强制你按时休息的 Windows 桌面宠物",
   "main": "electron/main.js",
   "author": "",
   "license": "MIT",
   "scripts": {
+    "build:renderer": "esbuild app.js --bundle --format=iife --platform=browser --outfile=app.bundle.js && esbuild electron/break.js --bundle --format=iife --platform=browser --outfile=electron/break.bundle.js",
+    "prestart": "npm run build:renderer",
     "start": "electron .",
     "dev": "electron .",
+    "predist": "npm run build:renderer",
     "dist": "electron-builder --win nsis",
     "pack": "electron-builder --dir"
   },
   "devDependencies": {
     "electron": "^38.2.1",
-    "electron-builder": "^26.0.12"
+    "electron-builder": "^26.0.12",
+    "esbuild": "^0.25.10"
   },
   "build": {
     "appId": "com.banzhu.pet",
@@ -26,6 +30,7 @@
       "index.html",
       "styles.css",
       "app.js",
+      "app.bundle.js",
       "electron/**/*",
       "assets/**/*"
     ],
@@ -33,7 +38,9 @@
       "output": "release"
     },
     "win": {
-      "target": ["nsis"]
+      "target": [
+        "nsis"
+      ]
     },
     "nsis": {
       "oneClick": false,
@@ -41,5 +48,8 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
     }
+  },
+  "dependencies": {
+    "three": "^0.180.0"
   }
 }

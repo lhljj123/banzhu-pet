@@ -7,5 +7,6 @@ app.bundle.js
 electron/break.bundle.js
 *.log
 pet-*.png
+work-pose.png
 Gemini_Generated_Image_*.jpg
 .DS_Store

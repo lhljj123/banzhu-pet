@@ -52,7 +52,7 @@ scene.add(cat);
 
 const body = make(new THREE.SphereGeometry(1, 40, 30), mat.cream, [0, 1.15, 0], [.82, 1.12, .68]);
 cat.add(body);
-const hips = make(new THREE.SphereGeometry(1, 36, 26), mat.cream, [0, .66, .18], [.84, .56, .68]);
+const hips = make(new THREE.SphereGeometry(1, 36, 26), mat.cream, [0, .62, -.12], [.78, .42, .62]);
 cat.add(hips);
 const belly = make(new THREE.SphereGeometry(.55, 32, 24), mat.white, [0, 1.05, .58], [.8, 1, .16]);
 cat.add(belly);
@@ -95,6 +95,18 @@ const muzzleRight = muzzleLeft.clone(); muzzleRight.position.x = .2;
 headRig.add(muzzleLeft, muzzleRight);
 headRig.add(make(new THREE.SphereGeometry(.1, 18, 12), mat.dark, [0, -.18, .91], [1, .7, .5]));
 
+const whiskers = new THREE.Group();
+function whisker(side, y, tilt) {
+  const curve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(side * .2, y, .94),
+    new THREE.Vector3(side * .62, y + tilt * .05, .98),
+    new THREE.Vector3(side * 1.02, y + tilt, .91)
+  ]);
+  whiskers.add(make(new THREE.TubeGeometry(curve, 14, .009, 5, false), mat.white, [0, 0, 0]));
+}
+[-1, 1].forEach(side => { whisker(side, -.25, .13); whisker(side, -.34, 0); whisker(side, -.42, -.12); });
+headRig.add(whiskers);
+
 const collar = make(new THREE.TorusGeometry(.52, .07, 12, 32), mat.pink, [0, 1.93, .02], [1, .72, 1]);
 collar.rotation.x = Math.PI / 2;
 cat.add(collar);
@@ -121,6 +133,13 @@ const leftArm = arm(-.62);
 const rightArm = arm(.62);
 leftArm.rotation.z = -.12;
 rightArm.rotation.z = .12;
+
+const laptop = new THREE.Group();
+const laptopScreen = make(new THREE.BoxGeometry(1.38, .86, .08), new THREE.MeshStandardMaterial({ color: 0x6d827f, roughness: .4, metalness: .2 }), [0, 1.05, .78], [1, 1, 1]);
+const screenGlow = make(new THREE.PlaneGeometry(1.18, .65), new THREE.MeshBasicMaterial({ color: 0xd8eee5 }), [0, 1.05, .83]);
+const keyboard = make(new THREE.BoxGeometry(1.62, .12, .82), new THREE.MeshStandardMaterial({ color: 0x4b5553, roughness: .45, metalness: .25 }), [0, .64, .9]);
+laptop.add(laptopScreen, screenGlow, keyboard);
+cat.add(laptop);
 
 const tailRig = new THREE.Group();
 tailRig.position.set(.64, .75, -.22);
@@ -159,9 +178,9 @@ function animate() {
   const flatten = THREE.MathUtils.clamp(state.elapsed / (state.focusSeconds || 60 * 60), 0, 1);
   let targetY = -1.35 + Math.sin(t * 2) * .012;
   cat.position.y += (targetY - cat.position.y) * .1;
-  hips.scale.x += (.84 * (1 + flatten * .62) - hips.scale.x) * .08;
-  hips.scale.y += (.56 * (1 - flatten * .48) - hips.scale.y) * .08;
-  hips.position.y += (.66 - flatten * .17 - hips.position.y) * .08;
+  hips.scale.x += (.78 * (1 + flatten * .42) - hips.scale.x) * .08;
+  hips.scale.y += (.42 * (1 - flatten * .3) - hips.scale.y) * .08;
+  hips.position.y += (.62 - flatten * .13 - hips.position.y) * .08;
   body.scale.x += (.82 * (1 + flatten * .12) - body.scale.x) * .08;
   body.scale.y += (1.12 * (1 - flatten * .12) - body.scale.y) * .08;
   body.position.y += (1.15 - flatten * .1 - body.position.y) * .08;
@@ -173,6 +192,10 @@ function animate() {
   tailRig.rotation.y = Math.sin(t * 1.5) * .28;
   leftArm.rotation.z = -.12;
   if (minutes >= 55) leftArm.rotation.z = -.3 - Math.abs(Math.sin(t * 6)) * .55;
+  const typing = minutes < 45 ? Math.sin(t * 4.4) * .035 : Math.sin(t * 1.3) * .01;
+  leftArm.position.y = 1.55 + typing;
+  rightArm.position.y = 1.55 - typing;
+  laptop.rotation.x = Math.sin(t * .8) * .008;
   headRig.rotation.x += (pointerY * .1 - headRig.rotation.x) * .08;
   headRig.rotation.y += (pointerX * .18 - headRig.rotation.y) * .08;
   eyes.forEach(eye => {

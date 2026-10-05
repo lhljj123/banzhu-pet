@@ -77,10 +77,27 @@ const arms=[];
   rig.add(make(new THREE.SphereGeometry(.24,22,16),white,[0,-.65,.08],[1.05,.68,1.05]));
   cat.add(rig); arms.push(rig);
 });
+const toy = new THREE.Group();
+const toyString = make(new THREE.CylinderGeometry(.012, .012, 1.8, 8), dark, [.9, 2.7, .6]);
+toyString.rotation.z = -.28;
+const toyBell = make(new THREE.SphereGeometry(.17, 24, 16), gold, [1.16, 1.82, .6]);
+toy.add(toyString, toyBell);
+cat.add(toy);
 const tailRig=new THREE.Group(); tailRig.position.set(.64,.75,-.22);
 const tailPath=new THREE.CatmullRomCurve3([new THREE.Vector3(0,0,0),new THREE.Vector3(.55,.04,0),new THREE.Vector3(1,.34,.05),new THREE.Vector3(.92,.8,.12),new THREE.Vector3(.62,.98,.2)]);
 tailRig.add(make(new THREE.TubeGeometry(tailPath,28,.16,10,false),gray,[0,0,0])); cat.add(tailRig);
 const ground=make(new THREE.CircleGeometry(2.1,48),new THREE.ShadowMaterial({color:0x2a382f,opacity:.2}),[0,-.08,0],[1.4,.4,1]); ground.rotation.x=-Math.PI/2; cat.add(ground);
+const whiskers = new THREE.Group();
+function whisker(side, y, tilt) {
+  const curve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(side * .18, y, .94),
+    new THREE.Vector3(side * .58, y + tilt * .05, .98),
+    new THREE.Vector3(side * 1.0, y + tilt, .91)
+  ]);
+  whiskers.add(make(new THREE.TubeGeometry(curve, 14, .009, 5, false), white, [0, 0, 0]));
+}
+[-1,1].forEach(side=>{whisker(side,-.25,.13);whisker(side,-.34,0);whisker(side,-.42,-.12)});
+headRig.add(whiskers);
 
 let current = { breakRemaining: 600, breakSeconds: 600 };
 let blink = 0;
@@ -105,6 +122,9 @@ function animate(){
   tailRig.rotation.y=Math.sin(t*1.4)*.3;
   arms[0].rotation.z=-.15-Math.abs(Math.sin(t*2.5))*.35;
   arms[1].rotation.z=.12;
+  arms[0].rotation.z = -.32 - Math.abs(Math.sin(t * 3.2)) * .55;
+  toy.rotation.z = Math.sin(t * 1.8) * .14;
+  toyBell.position.y = 1.82 + Math.sin(t * 3.6) * .08;
   if(t>nextBlink){blink=Math.min(1,blink+dt*14);if(blink>=1)nextBlink=t+3+Math.random()*4}else blink=Math.max(0,blink-dt*12);
   eyes.forEach(eye=>eye.scale.y=Math.max(.08,1-blink)); if(blink>=1)blink=.98;
   renderer.render(scene,camera);

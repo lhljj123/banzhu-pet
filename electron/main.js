@@ -21,8 +21,6 @@ let preferencesPath;
 let preferences = {};
 let dragOffset = null;
 let petVisibleUntil = 0;
-let edgePeek = false;
-let savedPosition = null;
 let wanderTarget = null;
 let nextWanderAt = 0;
 let warningVisible = false;
@@ -60,38 +58,14 @@ function broadcast() {
 function showPetFor(seconds = 120) {
   petVisibleUntil = Date.now() + seconds * 1000;
   if (mainWindow && !mainWindow.isDestroyed()) {
-    if (edgePeek && savedPosition) mainWindow.setPosition(savedPosition.x, savedPosition.y);
-    edgePeek = false;
     mainWindow.showInactive();
   }
-}
-
-function moveToEdgePeek() {
-  if (!mainWindow || mainWindow.isDestroyed() || edgePeek) return;
-  const [currentX, currentY] = mainWindow.getPosition();
-  const display = screen.getDisplayNearestPoint({ x: currentX, y: currentY });
-  const area = display.workArea;
-  const [width, height] = mainWindow.getSize();
-  savedPosition = { x: currentX, y: currentY };
-  // Keep most of the cat visible; only the rightmost 80px is off-screen.
-  mainWindow.setPosition(area.x + area.width - 220, Math.max(area.y, area.y + area.height - height - 80));
-  edgePeek = true;
 }
 
 function updatePetVisibility() {
   if (!mainWindow || mainWindow.isDestroyed() || state.mode === 'break' || inactiveAt) return;
-  if (warningVisible || Date.now() < petVisibleUntil) {
-    if (edgePeek && savedPosition) {
-      mainWindow.setPosition(savedPosition.x, savedPosition.y);
-      edgePeek = false;
-      wanderTarget = null;
-    }
-    mainWindow.showInactive();
-  }
-  else {
-    moveToEdgePeek();
-    mainWindow.showInactive();
-  }
+  if (warningVisible || Date.now() < petVisibleUntil) mainWindow.showInactive();
+  else mainWindow.hide();
 }
 
 function updateWander(now) {

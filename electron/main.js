@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, Notification, powerMonitor, screen, Tray, M
 const path = require('path');
 const { spawn } = require('child_process');
 const readline = require('readline');
+const fs = require('fs');
 
 const FOCUS_SECONDS = 60 * 60;
 const WARNING_SECONDS = 55 * 60;
@@ -15,6 +16,8 @@ let timer;
 let displayMonitor;
 let inactiveAt = null;
 let lastTick = Date.now();
+let preferencesPath;
+let preferences = {};
 let state = {
   mode: 'focus',
   elapsed: 0,
@@ -47,13 +50,25 @@ function broadcast() {
 }
 
 function createMainWindow() {
+  const display = screen.getPrimaryDisplay();
+  const defaultX = display.workArea.x + display.workArea.width - 320;
+  const defaultY = display.workArea.y + display.workArea.height - 390;
   mainWindow = new BrowserWindow({
-    width: 1180,
-    height: 760,
-    minWidth: 760,
-    minHeight: 620,
+    x: Number.isFinite(preferences.x) ? preferences.x : defaultX,
+    y: Number.isFinite(preferences.y) ? preferences.y : defaultY,
+    width: 300,
+    height: 360,
+    minWidth: 300,
+    minHeight: 360,
+    maxWidth: 300,
+    maxHeight: 360,
     show: false,
-    backgroundColor: '#f7f3eb',
+    transparent: true,
+    frame: false,
+    resizable: false,
+    hasShadow: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -61,8 +76,25 @@ function createMainWindow() {
       nodeIntegration: false
     }
   });
+  mainWindow.setAlwaysOnTop(true, 'floating');
+  mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: false });
   mainWindow.loadFile(path.join(__dirname, '..', 'index.html'));
-  mainWindow.once('ready-to-show', () => mainWindow.show());
+  mainWindow.once('ready-to-show', () => mainWindow.showInactive());
+  mainWindow.webContents.once('did-finish-load', async () => {
+    if (!process.env.PET_CAPTURE_PATH) return;
+    const image = await mainWindow.webContents.capturePage();
+    fs.writeFileSync(process.env.PET_CAPTURE_PATH, image.toPNG());
+  });
+  let savePositionTimer;
+  mainWindow.on('move', () => {
+    clearTimeout(savePositionTimer);
+    savePositionTimer = setTimeout(() => {
+      if (!mainWindow || mainWindow.isDestroyed()) return;
+      const [x, y] = mainWindow.getPosition();
+      preferences = { ...preferences, x, y };
+      try { fs.writeFileSync(preferencesPath, JSON.stringify(preferences)); } catch {}
+    }, 250);
+  });
   mainWindow.on('close', event => {
     if (!app.isQuitting) {
       event.preventDefault();
@@ -76,12 +108,15 @@ function createTray() {
   tray = new Tray(nativeImage.createFromDataURL(`data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`).resize({ width: 16, height: 16 }));
   tray.setToolTip('伴桌 - 久坐休息提醒');
   tray.setContextMenu(Menu.buildFromTemplate([
-    { label: '打开伴桌', click: () => { mainWindow.show(); mainWindow.focus(); } },
+    { label: '显示小花猫', click: () => mainWindow.showInactive() },
+    { label: '隐藏小花猫', click: () => mainWindow.hide() },
+    { label: '始终置顶', type: 'checkbox', checked: true, click: item => mainWindow.setAlwaysOnTop(item.checked, 'floating') },
+    { type: 'separator' },
     { label: '重新计时', click: resetFocus },
     { type: 'separator' },
     { label: '退出', click: () => { app.isQuitting = true; app.quit(); } }
   ]));
-  tray.on('double-click', () => { mainWindow.show(); mainWindow.focus(); });
+  tray.on('double-click', () => mainWindow.isVisible() ? mainWindow.hide() : mainWindow.showInactive());
 }
 
 function showWarning() {
@@ -214,6 +249,7 @@ function registerIpc() {
   ipcMain.handle('timer:pause', () => { state.paused = true; broadcast(); return publicState(); });
   ipcMain.handle('timer:resume', () => { state.paused = false; lastTick = Date.now(); broadcast(); return publicState(); });
   ipcMain.handle('timer:reset', () => { resetFocus('你手动重新开始了本轮。'); return publicState(); });
+  ipcMain.handle('window:hide', () => { mainWindow.hide(); return true; });
   ipcMain.handle('settings:save', () => publicState());
   ipcMain.handle('break:finish', () => finishBreak());
   ipcMain.handle('break:get-state', () => publicState());
@@ -244,6 +280,8 @@ if (!gotLock) app.quit();
 else {
   app.on('second-instance', () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); } });
   app.whenReady().then(() => {
+    preferencesPath = path.join(app.getPath('userData'), 'preferences.json');
+    try { preferences = JSON.parse(fs.readFileSync(preferencesPath, 'utf8')); } catch { preferences = {}; }
     if (app.isPackaged) {
       app.setLoginItemSettings({ openAtLogin: true, path: app.getPath('exe') });
     }

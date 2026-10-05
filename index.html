@@ -2,133 +2,48 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#f7f3eb">
-  <title>伴桌 - 陪你认真，也催你休息</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>伴桌猫猫</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <main class="app-shell">
-    <header class="topbar">
-      <a class="brand" href="#" aria-label="伴桌首页">
-        <span class="brand-mark">伴</span>
-        <span>伴桌</span>
-      </a>
-      <div class="top-actions">
-        <div class="streak" title="连续专注天数"><span>火苗</span><strong id="streakCount">1</strong> 天</div>
-        <button class="icon-button" id="soundToggle" title="切换声音" aria-label="切换声音">♪</button>
-        <button class="icon-button" id="settingsOpen" title="保护规则" aria-label="保护规则">⚙</button>
-      </div>
-    </header>
-
-    <section class="workspace" aria-label="专注空间">
-      <aside class="daily-panel">
-        <p class="eyebrow">今日进度</p>
-        <div class="today-time"><strong id="todayMinutes">0</strong><span>分钟</span></div>
-        <div class="goal-track"><span id="goalProgress"></span></div>
-        <p class="goal-copy">目标 <span id="goalMinutes">120</span> 分钟</p>
-
-        <div class="stat-list">
-          <div><span>完成轮次</span><strong id="roundCount">0</strong></div>
-          <div><span>获得积分</span><strong id="pointsCount">0</strong></div>
-        </div>
-
-        <button class="shop-button" id="shopOpen"><span>✦</span> 装扮衣橱 <b id="unlockHint">1 件可解锁</b></button>
-      </aside>
-
-      <section class="desk-scene">
-        <div class="window-scene" aria-hidden="true">
-          <span class="cloud cloud-one"></span><span class="cloud cloud-two"></span>
-          <div class="hills"></div>
-        </div>
-
-        <div class="status-pill" id="statusPill"><span></span><b id="petStatus">精神很好，陪你开工</b></div>
-
-        <div class="pet-wrap" id="petWrap">
-          <div class="thought" id="thoughtBubble">今天也一起推进一点吧</div>
-          <div class="pet" id="pet" aria-label="正在陪你工作的宠物">
-            <div class="ear ear-left"></div><div class="ear ear-right"></div>
-            <div class="pet-head">
-              <div class="pet-face">
-                <i class="eye eye-left"></i><i class="eye eye-right"></i>
-                <i class="nose"></i><i class="mouth"></i>
-              </div>
-              <div class="glasses"><i></i><i></i></div>
-              <div class="hat" id="petHat"></div>
-            </div>
-            <div class="pet-body"><div class="belly"></div><div class="arm arm-left"></div><div class="arm arm-right"></div></div>
-            <div class="tail"></div>
-          </div>
-          <div class="book"><span></span><span></span></div>
-          <div class="mug">☕</div>
-        </div>
-
-        <div class="desk"><div class="drawer"></div></div>
-
-        <div class="timer-card">
-          <div>
-            <p class="timer-label" id="timerLabel">本轮专注</p>
-            <div class="timer" id="timer">60:00</div>
-          </div>
-          <button class="primary-button" id="timerButton"><span>▶</span> 开始专注</button>
-          <button class="reset-button" id="resetButton" title="重置本轮" aria-label="重置本轮">↻</button>
-        </div>
-      </section>
-
-      <aside class="rewards-panel">
-        <div class="level-head"><div><p class="eyebrow">伙伴等级</p><strong>LV.<span id="level">1</span></strong></div><div class="level-badge">✦</div></div>
-        <div class="level-track"><span id="levelProgress"></span></div>
-        <p class="level-copy"><span id="levelPoints">0</span> / <span id="nextLevelPoints">100</span> 积分</p>
-
-        <h2>下一份福利</h2>
-        <div class="reward-item">
-          <div class="reward-icon">🎩</div>
-          <div><strong id="nextRewardName">小画家帽</strong><p>再专注 <span id="rewardMinutes">25</span> 分钟</p></div>
-        </div>
-        <div class="reward-item muted">
-          <div class="reward-icon">📊</div>
-          <div><strong>本周专注报告</strong><p>累计 180 分钟解锁</p></div>
-        </div>
-
-        <div class="tip"><span>!</span><p><strong>坐久了会变扁</strong><br>每轮结束后，伴桌会接管屏幕，陪你活动 10 分钟。</p></div>
-      </aside>
+  <main class="pet-stage" id="petStage">
+    <section class="speech" id="speech" aria-live="polite">
+      <strong id="speechTitle">我来陪你啦</strong>
+      <span id="speechText">认真工作，也要记得休息</span>
     </section>
-  </main>
 
-  <section class="break-overlay" id="breakOverlay" aria-hidden="true">
-    <div class="break-sky"><span></span><span></span><span></span></div>
-    <div class="break-content">
-      <div class="stretch-pet"><div class="mini-head">•ᴗ•</div><div class="mini-body"></div><i></i><b></b></div>
-      <p class="eyebrow">伴桌已接管屏幕</p>
-      <h1>屁股坐扁啦，起来走走</h1>
-      <p>看看远处，喝口水，活动一下肩颈。你的内容都好好留着。</p>
-      <div class="break-timer" id="breakTimer">10:00</div>
-      <div class="break-actions">
-        <button class="primary-button" id="finishBreak" disabled>休息结束后继续</button>
-        <button class="text-button" id="skipBreak">紧急跳过</button>
+    <section class="stats" id="stats" aria-hidden="true">
+      <header>
+        <div><small>今日陪伴</small><strong id="todayTime">0 分钟</strong></div>
+        <button id="closeStats" aria-label="收起数据">×</button>
+      </header>
+      <div class="stats-grid">
+        <div><span>本轮</span><b id="roundTime">00:00</b></div>
+        <div><span>积分</span><b id="points">0</b></div>
+        <div><span>完成休息</span><b id="rounds">0 次</b></div>
       </div>
-      <p class="break-note" id="breakNote">好好休息，按钮将在倒计时结束后可用</p>
+      <div class="progress"><i id="progress"></i></div>
+      <p>连续使用 55 分钟提醒，60 分钟强制休息</p>
+    </section>
+
+    <div class="cat-zone" id="catZone" title="双击查看今日数据">
+      <div class="photo-cat action-idle" id="photoCat">
+        <img src="assets/cat-photo-cutout.png" alt="戴粉色蝴蝶结的奶油色小猫">
+        <div class="eyelid left"></div>
+        <div class="eyelid right"></div>
+      </div>
+      <div class="zzz" id="zzz"><i>z</i><i>z</i><i>z</i></div>
+      <div class="ground-shadow"></div>
     </div>
-  </section>
 
-  <dialog id="settingsDialog">
-    <form method="dialog">
-      <header><div><p class="eyebrow">系统保护</p><h2>固定规则</h2></div><button class="icon-button" value="cancel" aria-label="关闭">×</button></header>
-      <label>提前提醒 <span>连续使用 55 分钟</span></label>
-      <label>强制休息 <span>使用 60 分钟后休息 10 分钟</span></label>
-      <label>重置条件 <span>锁屏或休眠至少 8 分钟</span></label>
-      <button class="primary-button full" id="saveSettings" value="default">知道了</button>
-    </form>
-  </dialog>
-
-  <dialog id="shopDialog" class="shop-dialog">
-    <form method="dialog">
-      <header><div><p class="eyebrow">成长奖励</p><h2>装扮衣橱</h2></div><button class="icon-button" value="cancel" aria-label="关闭">×</button></header>
-      <div class="shop-grid" id="shopGrid"></div>
-    </form>
-  </dialog>
-
-  <div class="toast" id="toast" role="status"></div>
+    <div class="quick-actions">
+      <button id="greetButton" title="和猫猫互动" aria-label="和猫猫互动">♡</button>
+      <button id="pauseButton" title="暂停计时" aria-label="暂停计时">Ⅱ</button>
+      <button id="resetButton" title="重新计时" aria-label="重新计时">↻</button>
+      <button id="hideButton" title="隐藏猫猫" aria-label="隐藏猫猫">×</button>
+    </div>
+  </main>
   <script src="app.js"></script>
 </body>
 </html>

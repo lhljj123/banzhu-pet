@@ -2,4 +2,6 @@ node_modules/
 release/
 dist/
 *.log
+pet-*.png
+Gemini_Generated_Image_*.jpg
 .DS_Store

@@ -104,7 +104,10 @@ function createMainWindow() {
   mainWindow.webContents.on('console-message', (_event, details) => {
     if (details.level === 'error') console.error(`[renderer] ${details.message}`);
   });
-  mainWindow.once('ready-to-show', () => showPetFor(PET_VISIBLE_SECONDS));
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.showInactive();
+    showPetFor(PET_VISIBLE_SECONDS);
+  });
   mainWindow.webContents.once('did-finish-load', async () => {
     if (!process.env.PET_CAPTURE_PATH) return;
     setTimeout(async () => {

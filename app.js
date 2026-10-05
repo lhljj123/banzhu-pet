@@ -134,12 +134,6 @@ const rightArm = arm(.62);
 leftArm.rotation.z = -.12;
 rightArm.rotation.z = .12;
 
-const laptop = new THREE.Group();
-const laptopScreen = make(new THREE.BoxGeometry(1.38, .86, .08), new THREE.MeshStandardMaterial({ color: 0x6d827f, roughness: .4, metalness: .2 }), [0, 1.05, .78], [1, 1, 1]);
-const screenGlow = make(new THREE.PlaneGeometry(1.18, .65), new THREE.MeshBasicMaterial({ color: 0xd8eee5 }), [0, 1.05, .83]);
-const keyboard = make(new THREE.BoxGeometry(1.62, .12, .82), new THREE.MeshStandardMaterial({ color: 0x4b5553, roughness: .45, metalness: .25 }), [0, .64, .9]);
-laptop.add(laptopScreen, screenGlow, keyboard);
-cat.add(laptop);
 
 const tailRig = new THREE.Group();
 tailRig.position.set(.64, .75, -.22);
@@ -195,7 +189,6 @@ function animate() {
   const typing = minutes < 45 ? Math.sin(t * 4.4) * .035 : Math.sin(t * 1.3) * .01;
   leftArm.position.y = 1.55 + typing;
   rightArm.position.y = 1.55 - typing;
-  laptop.rotation.x = Math.sin(t * .8) * .008;
   headRig.rotation.x += (pointerY * .1 - headRig.rotation.x) * .08;
   headRig.rotation.y += (pointerX * .18 - headRig.rotation.y) * .08;
   eyes.forEach(eye => {

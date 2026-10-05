@@ -9,6 +9,8 @@ const WARNING_SECONDS = Number(process.env.PET_WARNING_SECONDS || 55 * 60);
 const BREAK_SECONDS = Number(process.env.PET_BREAK_SECONDS || 10 * 60);
 const RESET_INACTIVE_SECONDS = Number(process.env.PET_RESET_INACTIVE_SECONDS || 8 * 60);
 const PET_VISIBLE_SECONDS = Number(process.env.PET_VISIBLE_SECONDS || 120);
+const PET_WIDTH = 220;
+const PET_HEIGHT = 280;
 
 let mainWindow;
 let tray;
@@ -89,24 +91,24 @@ function updateWander(now) {
 
 function createMainWindow() {
   const display = screen.getPrimaryDisplay();
-  const defaultX = display.workArea.x + display.workArea.width - 320;
-  const defaultY = display.workArea.y + display.workArea.height - 390;
+  const defaultX = display.workArea.x + display.workArea.width - PET_WIDTH - 20;
+  const defaultY = display.workArea.y + display.workArea.height - PET_HEIGHT - 20;
   const requestedPoint = {
     x: Number.isFinite(preferences.x) ? preferences.x : defaultX,
     y: Number.isFinite(preferences.y) ? preferences.y : defaultY
   };
   const initialArea = screen.getDisplayNearestPoint(requestedPoint).workArea;
-  const initialX = Math.max(initialArea.x, Math.min(requestedPoint.x, initialArea.x + initialArea.width - 300));
-  const initialY = Math.max(initialArea.y, Math.min(requestedPoint.y, initialArea.y + initialArea.height - 360));
+  const initialX = Math.max(initialArea.x, Math.min(requestedPoint.x, initialArea.x + initialArea.width - PET_WIDTH));
+  const initialY = Math.max(initialArea.y, Math.min(requestedPoint.y, initialArea.y + initialArea.height - PET_HEIGHT));
   mainWindow = new BrowserWindow({
     x: initialX,
     y: initialY,
-    width: 300,
-    height: 360,
-    minWidth: 300,
-    minHeight: 360,
-    maxWidth: 300,
-    maxHeight: 360,
+    width: PET_WIDTH,
+    height: PET_HEIGHT,
+    minWidth: PET_WIDTH,
+    minHeight: PET_HEIGHT,
+    maxWidth: PET_WIDTH,
+    maxHeight: PET_HEIGHT,
     show: false,
     transparent: true,
     frame: false,
@@ -123,6 +125,13 @@ function createMainWindow() {
   });
   mainWindow.setAlwaysOnTop(true, 'floating');
   mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: false });
+  if (process.platform === 'win32') {
+    mainWindow.setShape([
+      { x: 30, y: 35, width: 160, height: 110 },
+      { x: 42, y: 125, width: 145, height: 150 },
+      { x: 0, y: 205, width: 220, height: 72 }
+    ]);
+  }
   mainWindow.loadFile(path.join(__dirname, '..', 'index.html'));
   mainWindow.webContents.on('console-message', (_event, details) => {
     if (details.level === 'error') console.error(`[renderer] ${details.message}`);

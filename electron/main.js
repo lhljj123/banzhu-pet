@@ -73,13 +73,21 @@ function moveToEdgePeek() {
   const area = display.workArea;
   const [width, height] = mainWindow.getSize();
   savedPosition = { x: currentX, y: currentY };
-  mainWindow.setPosition(area.x + area.width - 90, Math.max(area.y, area.y + area.height - height - 80));
+  // Keep most of the cat visible; only the rightmost 80px is off-screen.
+  mainWindow.setPosition(area.x + area.width - 220, Math.max(area.y, area.y + area.height - height - 80));
   edgePeek = true;
 }
 
 function updatePetVisibility() {
   if (!mainWindow || mainWindow.isDestroyed() || state.mode === 'break' || inactiveAt) return;
-  if (warningVisible || Date.now() < petVisibleUntil) mainWindow.showInactive();
+  if (warningVisible || Date.now() < petVisibleUntil) {
+    if (edgePeek && savedPosition) {
+      mainWindow.setPosition(savedPosition.x, savedPosition.y);
+      edgePeek = false;
+      wanderTarget = null;
+    }
+    mainWindow.showInactive();
+  }
   else {
     moveToEdgePeek();
     mainWindow.showInactive();

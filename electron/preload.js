@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('desktopPet', {
   hide: () => ipcRenderer.invoke('window:hide'),
   beginDrag: (point) => ipcRenderer.invoke('window:drag-start', point),
   dragTo: (point) => ipcRenderer.send('window:drag-move', point),
+  endDrag: () => ipcRenderer.send('window:drag-end'),
   showContextMenu: () => ipcRenderer.invoke('window:context-menu'),
   reportError: (message) => ipcRenderer.send('debug:renderer-error', message),
   saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings),

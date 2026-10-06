@@ -227,6 +227,7 @@ canvas.addEventListener('pointermove', event => {
 });
 canvas.addEventListener('pointerup', event => {
   dragging = false;
+  window.desktopPet.endDrag();
   if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
 });
 canvas.addEventListener('pointerleave', () => { if (!dragging) { pointerX = 0; pointerY = 0; } });

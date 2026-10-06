@@ -27,6 +27,7 @@ let wanderTarget = null;
 let nextWanderAt = 0;
 let warningVisible = false;
 let pointerTimer;
+let moveMode = false;
 let state = {
   mode: 'focus',
   elapsed: 0,
@@ -81,25 +82,6 @@ function updatePetVisibility() {
   if (!mainWindow || mainWindow.isDestroyed() || state.mode === 'break' || inactiveAt) return;
   if (warningVisible || Date.now() < petVisibleUntil) mainWindow.showInactive();
   else mainWindow.hide();
-}
-
-function updateWander(now) {
-  if (!mainWindow || mainWindow.isDestroyed() || !warningVisible || state.mode !== 'focus') return;
-  const [currentX, currentY] = mainWindow.getPosition();
-  const display = screen.getDisplayNearestPoint({ x: currentX, y: currentY });
-  const area = display.workArea;
-  const [width, height] = mainWindow.getSize();
-  if (!wanderTarget || now >= nextWanderAt) {
-    wanderTarget = {
-      x: area.x + 30 + Math.floor(Math.random() * Math.max(1, area.width - width - 60)),
-      y: area.y + 30 + Math.floor(Math.random() * Math.max(1, area.height - height - 60))
-    };
-    nextWanderAt = now + 4500 + Math.random() * 3500;
-  }
-  const [x, y] = mainWindow.getPosition();
-  const nx = Math.round(x + (wanderTarget.x - x) * .035);
-  const ny = Math.round(y + (wanderTarget.y - y) * .035);
-  mainWindow.setPosition(nx, ny);
 }
 
 function createMainWindow() {
@@ -188,6 +170,12 @@ function createTray() {
     { type: 'separator' },
     { label: '退出', click: () => { app.isQuitting = true; app.quit(); } }
   ]));
+  tray.on('double-click', () => {
+    moveMode = true;
+    mainWindow?.setIgnoreMouseEvents(false);
+    mainWindow?.show();
+    mainWindow?.focus();
+  });
 }
 
 function showWarning() {
@@ -319,7 +307,6 @@ function tick() {
     return;
   }
   updatePetVisibility();
-  updateWander(now);
   if (state.paused || inactiveAt) return;
   state.elapsed += delta;
   state.totalSeconds += delta;
@@ -337,6 +324,7 @@ function registerIpc() {
   ipcMain.handle('timer:reset', () => publicState());
   ipcMain.handle('window:hide', () => true);
   ipcMain.handle('window:drag-start', (_event, point) => {
+    if (!moveMode) return false;
     const [windowX, windowY] = mainWindow.getPosition();
     dragOffset = { x: point.x - windowX, y: point.y - windowY };
     return true;
@@ -348,6 +336,11 @@ function registerIpc() {
     const nextX = Math.max(area.x, Math.min(Math.round(point.x - dragOffset.x), area.x + area.width - width));
     const nextY = Math.max(area.y, Math.min(Math.round(point.y - dragOffset.y), area.y + area.height - height));
     mainWindow.setPosition(nextX, nextY);
+  });
+  ipcMain.on('window:drag-end', () => {
+    dragOffset = null;
+    moveMode = false;
+    mainWindow?.setIgnoreMouseEvents(true, { forward: true });
   });
   ipcMain.handle('window:context-menu', event => {
     const minutes = Math.floor(state.totalSeconds / 60);

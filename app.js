@@ -48,6 +48,8 @@ function make(geometry, material, position, scale = [1, 1, 1]) {
 
 const cat = new THREE.Group();
 cat.position.y = -1.35;
+// Keep the pet's visual size stable when the window is moved or resized.
+cat.scale.setScalar(.78);
 scene.add(cat);
 
 const body = make(new THREE.SphereGeometry(1, 40, 30), mat.cream, [0, 1.15, 0], [.82, 1.12, .68]);

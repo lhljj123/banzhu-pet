@@ -93,10 +93,8 @@ function createMainWindow() {
   const display = screen.getPrimaryDisplay();
   const defaultX = display.workArea.x + display.workArea.width - PET_WIDTH - 20;
   const defaultY = display.workArea.y + display.workArea.height - PET_HEIGHT - 20;
-  const requestedPoint = {
-    x: Number.isFinite(preferences.x) ? preferences.x : defaultX,
-    y: Number.isFinite(preferences.y) ? preferences.y : defaultY
-  };
+  // Always start at the primary display's lower-right corner.
+  const requestedPoint = { x: defaultX, y: defaultY };
   const initialArea = screen.getDisplayNearestPoint(requestedPoint).workArea;
   const initialX = Math.max(initialArea.x, Math.min(requestedPoint.x, initialArea.x + initialArea.width - PET_WIDTH));
   const initialY = Math.max(initialArea.y, Math.min(requestedPoint.y, initialArea.y + initialArea.height - PET_HEIGHT));
@@ -125,6 +123,9 @@ function createMainWindow() {
   });
   mainWindow.setAlwaysOnTop(true, 'floating');
   mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: false });
+  // The pet is visual-only: transparent pixels and the cat itself never block
+  // links or controls underneath. Position is intentionally not draggable.
+  mainWindow.setIgnoreMouseEvents(true, { forward: true });
   mainWindow.loadFile(path.join(__dirname, '..', 'index.html'));
   mainWindow.webContents.on('console-message', (_event, details) => {
     if (details.level === 'error') console.error(`[renderer] ${details.message}`);

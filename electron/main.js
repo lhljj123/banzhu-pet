@@ -26,6 +26,7 @@ let petVisibleUntil = 0;
 let wanderTarget = null;
 let nextWanderAt = 0;
 let warningVisible = false;
+let pointerTimer;
 let state = {
   mode: 'focus',
   elapsed: 0,
@@ -55,6 +56,18 @@ function broadcast() {
   overlayWindows.forEach(win => {
     if (!win.isDestroyed()) win.webContents.send('break:state', data);
   });
+}
+
+function startPointerTracking() {
+  clearInterval(pointerTimer);
+  pointerTimer = setInterval(() => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    const cursor = screen.getCursorScreenPoint();
+    const bounds = mainWindow.getBounds();
+    const x = Math.max(-1, Math.min(1, (cursor.x - (bounds.x + bounds.width / 2)) / (bounds.width * .9)));
+    const y = Math.max(-1, Math.min(1, (cursor.y - (bounds.y + bounds.height / 2)) / (bounds.height * .9)));
+    mainWindow.webContents.send('pointer:state', { x, y });
+  }, 80);
 }
 
 function showPetFor(seconds = 120) {
@@ -396,6 +409,7 @@ else {
     powerMonitor.on('unlock-screen', becomeActive);
     powerMonitor.on('resume', becomeActive);
     startDisplayMonitor();
+    startPointerTracking();
     lastTick = Date.now();
     timer = setInterval(tick, 1000);
   });
@@ -404,6 +418,7 @@ else {
 app.on('before-quit', () => {
   app.isQuitting = true;
   clearInterval(timer);
+  clearInterval(pointerTimer);
   if (displayMonitor && !displayMonitor.killed) displayMonitor.kill();
   closeOverlays();
 });

@@ -12,4 +12,5 @@ contextBridge.exposeInMainWorld('desktopPet', {
   reportError: (message) => ipcRenderer.send('debug:renderer-error', message),
   saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings),
   onState: (callback) => ipcRenderer.on('timer:state', (_event, state) => callback(state))
+  ,onPointer: (callback) => ipcRenderer.on('pointer:state', (_event, point) => callback(point))
 });

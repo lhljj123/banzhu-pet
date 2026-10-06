@@ -234,5 +234,9 @@ canvas.addEventListener('contextmenu', event => { event.preventDefault(); window
 window.addEventListener('resize', () => renderer.setSize(innerWidth, innerHeight, false));
 
 window.desktopPet.onState(updateState);
+window.desktopPet.onPointer(point => {
+  pointerX = point.x;
+  pointerY = point.y;
+});
 window.desktopPet.getState().then(updateState);
 animate();

@@ -125,13 +125,6 @@ function createMainWindow() {
   });
   mainWindow.setAlwaysOnTop(true, 'floating');
   mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: false });
-  if (process.platform === 'win32') {
-    mainWindow.setShape([
-      { x: 30, y: 35, width: 160, height: 110 },
-      { x: 42, y: 125, width: 145, height: 150 },
-      { x: 0, y: 205, width: 220, height: 72 }
-    ]);
-  }
   mainWindow.loadFile(path.join(__dirname, '..', 'index.html'));
   mainWindow.webContents.on('console-message', (_event, details) => {
     if (details.level === 'error') console.error(`[renderer] ${details.message}`);

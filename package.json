@@ -1,6 +1,6 @@
 {
   "name": "banzhu-pet",
-  "version": "2.3.2",
+  "version": "2.3.3",
   "description": "一只会监督久坐、强制你按时休息的 Windows 桌面宠物",
   "main": "electron/main.js",
   "author": "",

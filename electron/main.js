@@ -131,6 +131,12 @@ function createMainWindow() {
     if (details.level === 'error') console.error(`[renderer] ${details.message}`);
   });
   mainWindow.once('ready-to-show', () => {
+    const currentDisplay = screen.getPrimaryDisplay();
+    const area = currentDisplay.workArea;
+    mainWindow.setPosition(
+      area.x + area.width - PET_WIDTH - 20,
+      area.y + area.height - PET_HEIGHT - 20
+    );
     mainWindow.showInactive();
     showPetFor(PET_VISIBLE_SECONDS);
   });

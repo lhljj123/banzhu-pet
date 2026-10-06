@@ -123,9 +123,15 @@ function createMainWindow() {
   });
   mainWindow.setAlwaysOnTop(true, 'floating');
   mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: false });
-  // The pet is visual-only: transparent pixels and the cat itself never block
-  // links or controls underneath. Position is intentionally not draggable.
-  mainWindow.setIgnoreMouseEvents(true, { forward: true });
+  // Keep hit-testing close to the visible cat so the surrounding transparent
+  // area remains clickable, while the cat itself stays draggable.
+  if (process.platform === 'win32') {
+    mainWindow.setShape([
+      { x: 16, y: 22, width: 188, height: 112 },
+      { x: 24, y: 108, width: 174, height: 132 },
+      { x: 4, y: 194, width: 212, height: 82 }
+    ]);
+  }
   mainWindow.loadFile(path.join(__dirname, '..', 'index.html'));
   mainWindow.webContents.on('console-message', (_event, details) => {
     if (details.level === 'error') console.error(`[renderer] ${details.message}`);
